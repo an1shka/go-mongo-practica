@@ -1,0 +1,6 @@
+.env
+/dist/
+/bin/
+/chat
+/node_modules/
+*.log

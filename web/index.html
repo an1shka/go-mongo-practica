@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Небольшой чат на Go для практики MongoDB, JWT и WebSocket."
+    />
+    <meta name="theme-color" content="#f4f1eb" />
+    <title>Mini Chat — Go practice</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/style.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="Mini Chat — главная">
+          <span class="brand-mark" aria-hidden="true">M</span>
+          <span class="brand-copy">
+            <strong>mini chat</strong>
+            <span>Go practice · lesson 11</span>
+          </span>
+        </a>
+        <span class="topbar-note">MongoDB · JWT · WebSocket</span>
+      </header>
+
+      <main>
+        <section id="auth-view" class="auth-layout" aria-labelledby="auth-title">
+          <div class="intro-copy">
+            <p class="eyebrow">ПРАКТИЧЕСКАЯ РАБОТА</p>
+            <h1 id="auth-title">Разговор начинается здесь.</h1>
+            <p class="intro-description">
+              Создайте аккаунт, войдите и отправьте первое сообщение. Чат
+              сохраняет историю и показывает новые сообщения сразу.
+            </p>
+            <div class="feature-list" aria-label="Что используется в проекте">
+              <div class="feature-row">
+                <span class="feature-number">01</span>
+                <span><strong>MongoDB</strong> хранит пользователей и сообщения</span>
+              </div>
+              <div class="feature-row">
+                <span class="feature-number">02</span>
+                <span><strong>JWT</strong> защищает историю и подключение к чату</span>
+              </div>
+              <div class="feature-row">
+                <span class="feature-number">03</span>
+                <span><strong>WebSocket</strong> доставляет новые сообщения мгновенно</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="auth-card">
+            <div class="auth-tabs" role="tablist" aria-label="Вход или регистрация">
+              <button
+                class="auth-tab is-active"
+                id="login-tab"
+                type="button"
+                role="tab"
+                aria-selected="true"
+                aria-controls="auth-form"
+                data-mode="login"
+              >
+                Войти
+              </button>
+              <button
+                class="auth-tab"
+                id="register-tab"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="auth-form"
+                data-mode="register"
+              >
+                Создать аккаунт
+              </button>
+            </div>
+
+            <div class="auth-heading">
+              <h2 id="form-title">С возвращением</h2>
+              <p id="form-description">Введите данные, чтобы открыть чат.</p>
+            </div>
+
+            <form id="auth-form" novalidate>
+              <label class="field">
+                <span>Имя пользователя</span>
+                <input
+                  id="username"
+                  name="username"
+                  type="text"
+                  autocomplete="username"
+                  minlength="3"
+                  maxlength="32"
+                  placeholder="Например, arman_01"
+                  required
+                />
+              </label>
+              <label class="field">
+                <span>Пароль</span>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autocomplete="current-password"
+                  minlength="8"
+                  maxlength="72"
+                  placeholder="Не менее 8 символов"
+                  required
+                />
+              </label>
+              <p id="auth-feedback" class="feedback" aria-live="polite"></p>
+              <button id="auth-submit" class="button button-primary" type="submit">
+                Войти в чат
+              </button>
+            </form>
+            <p class="auth-footnote">
+              Пароль хранится в базе только в виде bcrypt-хеша.
+            </p>
+          </div>
+        </section>
+
+        <section id="chat-view" class="chat-layout" hidden aria-labelledby="chat-title">
+          <div class="chat-heading">
+            <div>
+              <p class="eyebrow">ОБЩАЯ КОМНАТА</p>
+              <h1 id="chat-title">Сообщения</h1>
+              <p class="chat-subtitle">Короткие заметки, вопросы и ответы.</p>
+            </div>
+            <div class="account-actions">
+              <div class="user-chip">
+                <span class="avatar" id="user-avatar">M</span>
+                <span id="current-username">Пользователь</span>
+              </div>
+              <button id="logout-button" class="button button-quiet" type="button">
+                Выйти
+              </button>
+            </div>
+          </div>
+
+          <section class="chat-panel" aria-label="Общий чат">
+            <div class="chat-panel-header">
+              <div>
+                <strong>Комната #general</strong>
+                <span>Все участники видят новые сообщения</span>
+              </div>
+              <div id="connection-status" class="connection-status is-connecting" role="status">
+                <span class="status-dot" aria-hidden="true"></span>
+                <span id="connection-label">Подключаемся</span>
+              </div>
+            </div>
+
+            <div id="message-list" class="message-list" role="log" aria-live="polite" aria-relevant="additions">
+              <div id="empty-state" class="empty-state">
+                <span class="empty-mark" aria-hidden="true">01</span>
+                <strong>Здесь пока тихо</strong>
+                <span>Напишите первое сообщение — оно появится у всех в комнате.</span>
+              </div>
+            </div>
+
+            <form id="message-form" class="composer">
+              <label class="sr-only" for="message-input">Ваше сообщение</label>
+              <textarea
+                id="message-input"
+                name="text"
+                rows="1"
+                maxlength="2000"
+                placeholder="Напишите сообщение..."
+                required
+              ></textarea>
+              <div class="composer-footer">
+                <span>Enter — отправить · Shift + Enter — новая строка</span>
+                <button id="send-button" class="button button-primary send-button" type="submit">
+                  <span>Отправить</span>
+                  <span aria-hidden="true">↗</span>
+                </button>
+              </div>
+            </form>
+          </section>
+          <p id="chat-feedback" class="chat-feedback" aria-live="polite"></p>
+        </section>
+      </main>
+
+      <footer class="page-footer">
+        <span>Небольшой чат на Go</span>
+        <span>Пользовательские пароли не сохраняются в открытом виде</span>
+      </footer>
+    </div>
+  </body>
+</html>
